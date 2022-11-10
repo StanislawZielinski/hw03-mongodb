@@ -34,10 +34,8 @@ router.get('/:contactId', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const body = req.body;
-    const canSave = [body.name, body.email, body.phone].every(Boolean);
-    if (canSave) {
-      const result = joi.schema.validate(body);
-      const { error } = result; 
+    const result = joi.schemaPost.validate(body);
+    const { error } = result; 
       if (error) {
         const errorMessage = error.details.map((elem)=>elem.message);
         res.status(400).json({ message: errorMessage })
@@ -48,9 +46,6 @@ router.post('/', async (req, res, next) => {
           data:response
         })
       }
-    } else {
-      res.status(400).json({ message: 'missing required field' })
-    }
   } catch (error) {
     console.log(error);
     res.status(400).json({ message: 'Not found' })
@@ -63,12 +58,10 @@ router.put('/:contactId', async (req, res, next) => {
     const {contactId} = req.params;
     const contactFile = await contacts.getContactById(contactId);
     const body = req.body;
-    const {name, email, phone, favorite} = body;
-    const canSave = [name, email, phone, favorite].some(Boolean);
-    const result = joi.schema.validate(body);
+    const result = joi.schemaPut.validate(body);
     const { error } = result; 
     if (contactFile) {
-      if (canSave && !error) {
+      if (!error) {
         const response = await contacts.updateContact(contactId, body);
         res.status(200).json({ 
           status: 200,
@@ -109,19 +102,13 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
     const {contactId} = req.params;
     const contactFile = await contacts.getContactById(contactId);
     const body = req.body;
-    const result = joi.schema.validate(body);
+    const result = joi.schemaFavorite.validate(body);
     const { error } = result; 
     if (contactFile && !error) {
-      const key = Object.keys(body);
-      if (key.length===1 && key.includes('favorite')) {
         const response = await contacts.updateStatusContact(contactId, body);
         res.status(200).json({ 
           status: 200,
           message: response});
-      } else {
-        res.status(400).json({ message: 'missing field favorite or too many fields'})
-      }
-
     } else {
       const errorMessage = error.details.map((elem)=>elem.message);
       res.status(400).json({ message: errorMessage})
