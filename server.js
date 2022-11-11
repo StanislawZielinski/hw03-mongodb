@@ -4,7 +4,8 @@ const cors = require('cors')
 require('dotenv').config();
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-const contactsRouter = require('./routes/api/contacts')
+const contactsRouter = require('./routes/api/contacts');
+const userRouter = require('./routes/api/users');
 
 const app = express()
 
@@ -15,9 +16,10 @@ app.use(cors())
 app.use(express.json())
 
 app.use('/api/contacts', contactsRouter)
+app.use('/api', userRouter)
 
 app.use((req, res) => {
-  res.status(404).json({ message: 'Not found' })
+  res.status(404).json({ message: 'use: /api' })
 })
 
 app.use((err, req, res, next) => {

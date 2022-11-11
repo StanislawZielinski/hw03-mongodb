@@ -26,6 +26,12 @@ const schemaFavorite = Joi.object().keys({
     favorite: Joi.boolean(),
 });
 
+const schemaRegistration = Joi.object().keys({
+    email: Joi.string().email({ tlds: false }),
+    password: Joi.string().pattern(/^[a-zA-Z0-9]{3,30}$/),
+})
+
+
 module.exports = {
-    schemaPost, schemaPut, schemaFavorite
+    schemaPost, schemaPut, schemaFavorite, schemaRegistration
 }

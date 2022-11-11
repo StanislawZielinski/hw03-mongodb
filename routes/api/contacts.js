@@ -52,7 +52,6 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-
 router.put('/:contactId', async (req, res, next) => {
   try {
     const {contactId} = req.params;
