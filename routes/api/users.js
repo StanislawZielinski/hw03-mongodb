@@ -8,10 +8,6 @@ const secret = process.env.SECRET;
 const {auth} = require('../../authorization/auth');
 // const passportJWT = require('passport-jwt');
 
-
-
-
-
 router.get('/', auth, async (req, res, next) => {
   try {
     const { email } = req.user
@@ -24,20 +20,7 @@ router.get('/', auth, async (req, res, next) => {
   }
 })
 
-router.get('/users/logout', auth, async (req, res, next) => {
-  try {
-    console.log(req.user);
-    const { id } = req.user;
-    const response = await user.logoutUser(id);
-    console.log(response);
-      res.status(204).json({ 
-      status: 204,
-      data: `Logout successful: ${response}`
-    });
-  } catch (error) {
-    console.log(error)
-  }
-})
+
 
 // router.get('/:contactId', async (req, res, next) => {
 //   try {
@@ -142,6 +125,20 @@ router.post('/users/login', async (req, res, next) => {
   }
 });
 
+router.get('/users/logout', auth, async (req, res, next) => {
+  try {
+    console.log(req.user);
+    const { id } = req.user;
+    const response = await user.logoutUser(id);
+    console.log(response);
+      res.status(204).json({ 
+      status: 204,
+      data: `Logout successful: ${response}`
+    });
+  } catch (error) {
+    console.log(error)
+  }
+})
 // router.put('/:contactId', async (req, res, next) => {
 //   try {
 //     const {contactId} = req.params;
