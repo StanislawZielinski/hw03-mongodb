@@ -2,8 +2,11 @@ const express = require('express')
 const router = express.Router()
 const contacts = require("../../models/contacts");
 const joi = require('../../utils/joi/joi');
+const {auth} = require('../../authorization/auth');
 
-router.get('/', async (req, res, next) => {
+
+
+router.get('/',auth, async (req, res, next) => {
   try {
     const response = await contacts.listContacts();
     res.status(200).json({ 
@@ -14,7 +17,7 @@ router.get('/', async (req, res, next) => {
   }
 })
 
-router.get('/:contactId', async (req, res, next) => {
+router.get('/:contactId',auth, async (req, res, next) => {
   try {
     const {contactId} = req.params;
     const response = await contacts.getContactById(contactId);
@@ -31,7 +34,7 @@ router.get('/:contactId', async (req, res, next) => {
   }
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/',auth, async (req, res, next) => {
   try {
     const body = req.body;
     const result = joi.schemaPost.validate(body);
@@ -52,7 +55,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.put('/:contactId', async (req, res, next) => {
+router.put('/:contactId',auth, async (req, res, next) => {
   try {
     const {contactId} = req.params;
     const contactFile = await contacts.getContactById(contactId);
@@ -78,7 +81,7 @@ router.put('/:contactId', async (req, res, next) => {
   }
 });
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:contactId',auth, async (req, res, next) => {
   try {
     const {contactId} = req.params;
     const contactFile = await contacts.getContactById(contactId);
@@ -96,7 +99,7 @@ router.delete('/:contactId', async (req, res, next) => {
   }  
 })
 
-router.patch('/:contactId/favorite', async (req, res, next) => {
+router.patch('/:contactId/favorite',auth, async (req, res, next) => {
   try {
     const {contactId} = req.params;
     const contactFile = await contacts.getContactById(contactId);

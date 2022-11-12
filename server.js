@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const contactsRouter = require('./routes/api/contacts');
 const userRouter = require('./routes/api/users');
+require('./config/config-passport')
 
 const app = express()
 
