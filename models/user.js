@@ -1,27 +1,27 @@
-const User = require('../services/schemas/userSchema')
+const UserSchema = require('../services/schemas/userSchema')
 
 const listUser = async () => {
-  return User.find()
+  return UserSchema.find()
 }
 
 const getUserById = (id) => {
-  return User.findOne({ _id: id })
+  return UserSchema.findOne({ _id: id })
 }
 
 const addUser = (body) => {
-  return User.create(body)
+  return UserSchema.create(body)
 }
 
 const updateUser = (id, body) => {
-  return User.findByIdAndUpdate({ _id: id }, body, { new: true })
+  return UserSchema.findByIdAndUpdate({ _id: id }, body, { new: true })
 }
 
 const removeUser = (id) => {
-  return User.findByIdAndRemove({ _id: id })
+  return UserSchema.findByIdAndRemove({ _id: id })
 }
 
 const updateStatusUser = (id, body) => {
-  return User.findByIdAndUpdate({ _id: id }, body, { new: true })
+  return UserSchema.findByIdAndUpdate({ _id: id }, body, { new: true })
 }
 
 module.exports = {

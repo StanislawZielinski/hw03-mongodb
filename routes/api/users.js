@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const User = require("../../models/user");
+const UserSchema = require('../../services/schemas/userSchema');
 const joi = require('../../utils/joi/joi');
 
 
@@ -35,21 +36,35 @@ router.get('/', async (req, res, next) => {
 router.post('/users/signup', async (req, res, next) => {
   try {
     const body = req.body;
+    const { email, password } = req.body
     const result = joi.schemaRegistration.validate(body);
     const { error } = result; 
+    const ifUserAlreadyExist = await UserSchema.findOne({email})
+    if (ifUserAlreadyExist) {
+      return res.status(409).json({
+        status: 'error',
+        code: 409,
+        message: 'Email is already in use',
+        data: 'Conflict',
+      })
+    };
       if (error) {
         const errorMessage = error.details.map((elem)=>elem.message);
         res.status(400).json({ message: errorMessage })
       } else {
-        const newUser = new User (body);
-        newUser.setPassword(body.password);
-        await newUser.save()
-        // console.log(body.password);
-            // const response = await user.addUser(body);
-            res.status(201).json({
-                status:201,
-                data:"registration sucessful!"
-            })
+        const newUser = new UserSchema ({ email, password });
+        newUser.setPassword(password);
+        await newUser.save();
+        const response = {
+          "user":{
+            "email":email,
+            "subscription": "starter"
+          }
+        }
+          res.status(201).json({
+              status:201,
+              data:response
+          })
         }
   } catch (error) {
     console.log(error);
