@@ -6,9 +6,14 @@ const { auth } = require("../../authorization/auth");
 
 router.get("/", auth, async (req, res, next) => {
   try {
-    const response = await contacts.listContacts();
+    const page = req.query.page;
+    const limit = req.query.limit;
+    const startIndex = (page - 1) * limit;
+    const total = await contacts.listContacts();
+    const response = await contacts.getLimitedContacts(limit, startIndex);
     res.status(200).json({
       status: 200,
+      total: total.length,
       data: response,
     });
   } catch (error) {
