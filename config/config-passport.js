@@ -14,6 +14,7 @@ const params = {
 // JWT Strategy
 passport.use(
   new Strategy(params, function (payload, done) {
+    console.log(payload);
     UserSchema.findOne({ _id: payload.id })
       .then((user) => {
         if (!user) {

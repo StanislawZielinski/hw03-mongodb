@@ -6,7 +6,6 @@ const joi = require('../../utils/joi/joi');
 const jwt = require('jsonwebtoken');
 const secret = process.env.SECRET;
 const {auth} = require('../../authorization/auth');
-// const passportJWT = require('passport-jwt');
 
 router.get('/', auth, async (req, res, next) => {
   try {
@@ -19,25 +18,6 @@ router.get('/', auth, async (req, res, next) => {
     console.log(error)
   }
 })
-
-
-
-// router.get('/:contactId', async (req, res, next) => {
-//   try {
-//     const {contactId} = req.params;
-//     const response = await contacts.getContactById(contactId);
-//     if (response) {
-//       res.status(200).json({ 
-//         status: 200,
-//         data: response });
-//     } else {
-//       res.status(404).json({ message: 'User not exist' })
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     res.status(404).json({ message: 'Not found' })
-//   }
-// })
 
 router.post('/users/signup', async (req, res, next) => {
   try {
@@ -110,14 +90,11 @@ router.post('/users/login', async (req, res, next) => {
           email: findUser.email
         }
         const token = jwt.sign(payload, secret, {expiresIn: '1h'});
-        // console.log(token);
         const response = await user.loginUser(findUser.id, token);
         res.status(200).json({
             status:200,
             data:response
         });
-        // const verify = jwt.verify(token, secret);
-        // console.log(verify);
       }
   } catch (error) {
     console.log(error);
@@ -139,70 +116,20 @@ router.get('/users/logout', auth, async (req, res, next) => {
     console.log(error)
   }
 })
-// router.put('/:contactId', async (req, res, next) => {
-//   try {
-//     const {contactId} = req.params;
-//     const contactFile = await contacts.getContactById(contactId);
-//     const body = req.body;
-//     const result = joi.schemaPut.validate(body);
-//     const { error } = result; 
-//     if (contactFile) {
-//       if (!error) {
-//         const response = await contacts.updateContact(contactId, body);
-//         res.status(200).json({ 
-//           status: 200,
-//           message: response});
-//       } else {
-//         const errorMessage = error.details.map((elem)=>elem.message);
-//         res.status(400).json({ message: errorMessage })
-//       }
-//     } else {
-//       res.status(404).json({ message: 'Not found' })
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     res.status(404).json({ message: 'Not found' })
-//   }
-// });
 
-// router.delete('/:contactId', async (req, res, next) => {
-//   try {
-//     const {contactId} = req.params;
-//     const contactFile = await contacts.getContactById(contactId);
-//     if (contactFile) {
-//       await contacts.removeContact(contactId);
-//       res.status(200).json({ 
-//         status: 200,
-//         message: 'contact deleted'});
-//     } else {
-//       res.status(404).json({ message: 'Not found' })
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     res.status(404).json({ message: 'Not found' })
-//   }  
-// })
-
-// router.patch('/:contactId/favorite', async (req, res, next) => {
-//   try {
-//     const {contactId} = req.params;
-//     const contactFile = await contacts.getContactById(contactId);
-//     const body = req.body;
-//     const result = joi.schemaFavorite.validate(body);
-//     const { error } = result; 
-//     if (contactFile && !error) {
-//         const response = await contacts.updateStatusContact(contactId, body);
-//         res.status(200).json({ 
-//           status: 200,
-//           message: response});
-//     } else {
-//       const errorMessage = error.details.map((elem)=>elem.message);
-//       res.status(400).json({ message: errorMessage})
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     res.status(404).json({ message: 'Not found' })
-//   }  
-// });
+router.get('/users/current', auth, async (req, res, next) => {
+  try {
+    const { id } = req.user;
+    const response = await user.getUserById(id);
+    console.log(response);
+      res.status(200).json({ 
+      status: 200,
+      email:response.email,
+      subscription:response.subscription
+    });
+  } catch (error) {
+    console.log(error)
+  }
+})
 
 module.exports = router

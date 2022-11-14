@@ -4,8 +4,6 @@ const contacts = require("../../models/contacts");
 const joi = require('../../utils/joi/joi');
 const {auth} = require('../../authorization/auth');
 
-
-
 router.get('/',auth, async (req, res, next) => {
   try {
     const response = await contacts.listContacts();

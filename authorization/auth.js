@@ -1,8 +1,9 @@
 const passport = require('passport');
 
 const auth = (req, res, next) => {
+  console.log(req.rawHeaders);
     passport.authenticate('jwt', { session: false }, (err, user) => {
-      console.log(err);
+      // console.log(err);
       if (!user || err) {
         return res.status(401).json({
           status: 'error',
