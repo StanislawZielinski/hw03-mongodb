@@ -16,9 +16,10 @@ const schemaFavorite = Joi.object().keys({
   favorite: Joi.boolean(),
 });
 const schemaFavoriteList = Joi.boolean();
-const schemaPageAndLimit = Joi.object().keys({
+const schemaPageAndLimitAndFavorite = Joi.object().keys({
   page: Joi.number().integer(),
   limit: Joi.number().integer(),
+  favorite: Joi.boolean(),
 });
 
 const schemaRegistration = Joi.object().keys({
@@ -32,5 +33,5 @@ module.exports = {
   schemaFavorite,
   schemaRegistration,
   schemaFavoriteList,
-  schemaPageAndLimit,
+  schemaPageAndLimitAndFavorite,
 };
