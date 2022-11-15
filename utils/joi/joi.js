@@ -1,16 +1,36 @@
-const Joi = require('joi');
+const Joi = require("joi");
 
-const schema = Joi.object().keys({
-    name: Joi.string()
-        .alphanum()
-        .min(3)
-        .max(30),
-    email: Joi.string()
-        .email({ tlds: false }),
-    phone: Joi.number().integer(),
-    favorite: Joi.boolean(),
-    })
+const schemaPost = Joi.object().keys({
+  name: Joi.string().alphanum().min(3).max(30).required(),
+  email: Joi.string().email({ tlds: false }).required(),
+  phone: Joi.number().integer().required(),
+});
+
+const schemaPut = Joi.object().keys({
+  name: Joi.string().alphanum().min(3).max(30),
+  email: Joi.string().email({ tlds: false }),
+  phone: Joi.number().integer(),
+});
+
+const schemaFavorite = Joi.object().keys({
+  favorite: Joi.boolean(),
+});
+const schemaFavoriteList = Joi.boolean();
+const schemaPageAndLimit = Joi.object().keys({
+  page: Joi.number().integer(),
+  limit: Joi.number().integer(),
+});
+
+const schemaRegistration = Joi.object().keys({
+  email: Joi.string().email({ tlds: false }),
+  password: Joi.string().pattern(/^[a-zA-Z0-9]{3,30}$/),
+});
 
 module.exports = {
-    schema,
-}
+  schemaPost,
+  schemaPut,
+  schemaFavorite,
+  schemaRegistration,
+  schemaFavoriteList,
+  schemaPageAndLimit,
+};

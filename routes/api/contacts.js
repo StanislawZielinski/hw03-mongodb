@@ -1,135 +1,172 @@
-const express = require('express')
-const router = express.Router()
+const express = require("express");
+const router = express.Router();
 const contacts = require("../../models/contacts");
-const joi = require('../../utils/joi/joi');
+const joi = require("../../utils/joi/joi");
+const { auth } = require("../../authorization/auth");
 
-router.get('/', async (req, res, next) => {
+router.get("/", auth, pagination(), async (req, res, next) => {
   try {
-    const response = await contacts.listContacts();
-    res.status(200).json({ 
-    status: 200,
-    data: response });
+    // const favorite = req.query.favorite;
+    // if (favorite) {
+    //   const { error } = joi.schemaFavoriteList.validate(favorite);
+    //   if (error) {
+    //     const errorMessage = error.details.map((elem) => elem.message);
+    //     res.status(400).json({ message: errorMessage });
+    //   } else {
+    //     response = await contacts.getFavoriteContacts(favorite);
+    //   }
+    // }
+    // response = await contacts.listContacts();
+    res.status(200).json({
+      status: 200,
+      total: res.total,
+      data: res.response,
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-})
+});
 
-router.get('/:contactId', async (req, res, next) => {
+router.get("/:contactId", auth, async (req, res, next) => {
   try {
-    const {contactId} = req.params;
+    const { contactId } = req.params;
     const response = await contacts.getContactById(contactId);
     if (response) {
-      res.status(200).json({ 
+      res.status(200).json({
         status: 200,
-        data: response });
+        data: response,
+      });
     } else {
-      res.status(404).json({ message: 'User not exist' })
+      res.status(404).json({ message: "User not exist" });
     }
   } catch (error) {
     console.log(error);
-    res.status(404).json({ message: 'Not found' })
-  }
-})
-
-router.post('/', async (req, res, next) => {
-  try {
-    const body = req.body;
-    const canSave = [body.name, body.email, body.phone].every(Boolean);
-    if (canSave) {
-      const result = joi.schema.validate(body);
-      const { error } = result; 
-      if (error) {
-        const errorMessage = error.details.map((elem)=>elem.message);
-        res.status(400).json({ message: errorMessage })
-      } else {
-        const response = await contacts.addContact(body)
-        res.status(201).json({
-          status:201,
-          data:response
-        })
-      }
-    } else {
-      res.status(400).json({ message: 'missing required field' })
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({ message: 'Not found' })
+    res.status(404).json({ message: "Not found" });
   }
 });
 
-
-router.put('/:contactId', async (req, res, next) => {
+router.post("/", auth, async (req, res, next) => {
   try {
-    const {contactId} = req.params;
+    const body = req.body;
+    const { error } = joi.schemaPost.validate(body);
+    if (error) {
+      const errorMessage = error.details.map((elem) => elem.message);
+      res.status(400).json({ message: errorMessage });
+    } else {
+      const response = await contacts.addContact(body);
+      res.status(201).json({
+        status: 201,
+        data: response,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ message: "Not found" });
+  }
+});
+
+router.put("/:contactId", auth, async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
     const contactFile = await contacts.getContactById(contactId);
     const body = req.body;
-    const {name, email, phone, favorite} = body;
-    const canSave = [name, email, phone, favorite].some(Boolean);
-    const result = joi.schema.validate(body);
-    const { error } = result; 
+    const result = joi.schemaPut.validate(body);
+    const { error } = result;
     if (contactFile) {
-      if (canSave && !error) {
+      if (!error) {
         const response = await contacts.updateContact(contactId, body);
-        res.status(200).json({ 
+        res.status(200).json({
           status: 200,
-          message: response});
+          message: response,
+        });
       } else {
-        const errorMessage = error.details.map((elem)=>elem.message);
-        res.status(400).json({ message: errorMessage })
+        const errorMessage = error.details.map((elem) => elem.message);
+        res.status(400).json({ message: errorMessage });
       }
     } else {
-      res.status(404).json({ message: 'Not found' })
+      res.status(404).json({ message: "Not found" });
     }
   } catch (error) {
     console.log(error);
-    res.status(404).json({ message: 'Not found' })
+    res.status(404).json({ message: "Not found" });
   }
 });
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete("/:contactId", auth, async (req, res, next) => {
   try {
-    const {contactId} = req.params;
+    const { contactId } = req.params;
     const contactFile = await contacts.getContactById(contactId);
     if (contactFile) {
       await contacts.removeContact(contactId);
-      res.status(200).json({ 
+      res.status(200).json({
         status: 200,
-        message: 'contact deleted'});
+        message: "contact deleted",
+      });
     } else {
-      res.status(404).json({ message: 'Not found' })
+      res.status(404).json({ message: "Not found" });
     }
   } catch (error) {
     console.log(error);
-    res.status(404).json({ message: 'Not found' })
-  }  
-})
-
-router.patch('/:contactId/favorite', async (req, res, next) => {
-  try {
-    const {contactId} = req.params;
-    const contactFile = await contacts.getContactById(contactId);
-    const body = req.body;
-    const result = joi.schema.validate(body);
-    const { error } = result; 
-    if (contactFile && !error) {
-      const key = Object.keys(body);
-      if (key.length===1 && key.includes('favorite')) {
-        const response = await contacts.updateStatusContact(contactId, body);
-        res.status(200).json({ 
-          status: 200,
-          message: response});
-      } else {
-        res.status(400).json({ message: 'missing field favorite or too many fields'})
-      }
-
-    } else {
-      const errorMessage = error.details.map((elem)=>elem.message);
-      res.status(400).json({ message: errorMessage})
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(404).json({ message: 'Not found' })
-  }  
+    res.status(404).json({ message: "Not found" });
+  }
 });
 
-module.exports = router
+router.patch("/:contactId/favorite", auth, async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const contactFile = await contacts.getContactById(contactId);
+    const body = req.body;
+    const result = joi.schemaFavorite.validate(body);
+    const { error } = result;
+    if (contactFile && !error) {
+      const response = await contacts.updateStatusContact(contactId, body);
+      res.status(200).json({
+        status: 200,
+        message: response,
+      });
+    } else {
+      const errorMessage = error.details.map((elem) => elem.message);
+      res.status(400).json({ message: errorMessage });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({ message: "Not found" });
+  }
+});
+
+function pagination() {
+  return async (req, res, next) => {
+    const page = req.query.page;
+    const limit = req.query.limit;
+    console.log(page, limit);
+
+    try {
+      const total = (await contacts.listContacts()).length;
+      res.total = total;
+
+      const startIndex = (page - 1) * limit;
+      const endIndex = page * limit;
+      let response;
+      const { error } = joi.schemaPageAndLimit.validate({
+        page: page,
+        limit: limit,
+      });
+      if (error) {
+        const errorMessage = error.details.map((elem) => elem.message);
+        res.status(400).json({ message: errorMessage });
+      } else {
+        if (total < endIndex) {
+          response = "No contacts";
+        } else {
+          response = await contacts.getLimitedContacts(limit, startIndex);
+        }
+      }
+      res.response = response;
+      next();
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+}
+
+module.exports = router;
