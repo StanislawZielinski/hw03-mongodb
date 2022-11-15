@@ -8,6 +8,10 @@ const getLimitedContacts = async (limit, skip) => {
   return Contact.find().limit(limit).skip(skip);
 };
 
+const getFavoriteContacts = async (favorite) => {
+  return Contact.find({ favorite: favorite });
+};
+
 const getContactById = (id) => {
   return Contact.findOne({ _id: id });
 };
@@ -36,4 +40,5 @@ module.exports = {
   removeContact,
   updateStatusContact,
   getLimitedContacts,
+  getFavoriteContacts,
 };

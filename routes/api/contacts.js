@@ -4,17 +4,23 @@ const contacts = require("../../models/contacts");
 const joi = require("../../utils/joi/joi");
 const { auth } = require("../../authorization/auth");
 
-router.get("/", auth, async (req, res, next) => {
+router.get("/", auth, pagination(), async (req, res, next) => {
   try {
-    const page = req.query.page;
-    const limit = req.query.limit;
-    const startIndex = (page - 1) * limit;
-    const total = await contacts.listContacts();
-    const response = await contacts.getLimitedContacts(limit, startIndex);
+    // const favorite = req.query.favorite;
+    // if (favorite) {
+    //   const { error } = joi.schemaFavoriteList.validate(favorite);
+    //   if (error) {
+    //     const errorMessage = error.details.map((elem) => elem.message);
+    //     res.status(400).json({ message: errorMessage });
+    //   } else {
+    //     response = await contacts.getFavoriteContacts(favorite);
+    //   }
+    // }
+    // response = await contacts.listContacts();
     res.status(200).json({
       status: 200,
-      total: total.length,
-      data: response,
+      total: res.total,
+      data: res.response,
     });
   } catch (error) {
     console.log(error);
@@ -42,8 +48,7 @@ router.get("/:contactId", auth, async (req, res, next) => {
 router.post("/", auth, async (req, res, next) => {
   try {
     const body = req.body;
-    const result = joi.schemaPost.validate(body);
-    const { error } = result;
+    const { error } = joi.schemaPost.validate(body);
     if (error) {
       const errorMessage = error.details.map((elem) => elem.message);
       res.status(400).json({ message: errorMessage });
@@ -128,5 +133,40 @@ router.patch("/:contactId/favorite", auth, async (req, res, next) => {
     res.status(404).json({ message: "Not found" });
   }
 });
+
+function pagination() {
+  return async (req, res, next) => {
+    const page = req.query.page;
+    const limit = req.query.limit;
+    console.log(page, limit);
+
+    try {
+      const total = (await contacts.listContacts()).length;
+      res.total = total;
+
+      const startIndex = (page - 1) * limit;
+      const endIndex = page * limit;
+      let response;
+      const { error } = joi.schemaPageAndLimit.validate({
+        page: page,
+        limit: limit,
+      });
+      if (error) {
+        const errorMessage = error.details.map((elem) => elem.message);
+        res.status(400).json({ message: errorMessage });
+      } else {
+        if (total < endIndex) {
+          response = "No contacts";
+        } else {
+          response = await contacts.getLimitedContacts(limit, startIndex);
+        }
+      }
+      res.response = response;
+      next();
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+}
 
 module.exports = router;
