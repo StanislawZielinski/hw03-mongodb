@@ -8,7 +8,7 @@ router.get("/", auth, pagination(), async (req, res, next) => {
   try {
     res.status(200).json({
       status: 200,
-      total: res.total,
+      totalInDatabase: res.totalInDatabase,
       data: res.response,
     });
   } catch (error) {
@@ -124,16 +124,6 @@ router.patch("/:contactId/favorite", auth, async (req, res, next) => {
 });
 
 function pagination() {
-  // if (favorite) {
-  //   const { error } = joi.schemaFavoriteList.validate(favorite);
-  //   if (error) {
-  //     const errorMessage = error.details.map((elem) => elem.message);
-  //     res.status(400).json({ message: errorMessage });
-  //   } else {
-  //     response = await contacts.getFavoriteContacts(favorite);
-  //   }
-  // }
-
   return async (req, res, next) => {
     const page = req.query.page;
     const limit = req.query.limit;
@@ -142,8 +132,8 @@ function pagination() {
     console.log(page, limit, favorite);
 
     try {
-      const total = (await contacts.listContacts()).length;
-      res.total = total;
+      const totalInDatabase = (await contacts.listContacts()).length;
+      res.totalInDatabase = totalInDatabase;
 
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
@@ -157,7 +147,7 @@ function pagination() {
         const errorMessage = error.details.map((elem) => elem.message);
         res.status(400).json({ message: errorMessage });
       } else {
-        if (total < endIndex) {
+        if (totalInDatabase < endIndex) {
           response = "No contacts";
         } else {
           if (favorite === undefined) {

@@ -19,6 +19,23 @@ router.get("/", auth, async (req, res, next) => {
   }
 });
 
+router.patch("/users", auth, async (req, res, next) => {
+  try {
+    const { error } = joi.schemaSubscritpion.validate(req.body);
+    if (error) {
+      const errorMessage = error.details.map((elem) => elem.message);
+      res.status(400).json(`${errorMessage} allowed:pro, starter, business`);
+    } else {
+      res.status(200).json({
+        status: 200,
+        data: `subscritpon changed: ${req.body.subscription}`,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 router.post("/users/signup", async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -83,7 +100,7 @@ router.post("/users/login", async (req, res, next) => {
         id: user.id,
         email: user.email,
       };
-      const token = jwt.sign(payload, secret, { expiresIn: "1h" });
+      const token = jwt.sign(payload, secret, { expiresIn: "3h" });
       const response = await userModel.loginUser(user.id, token);
       res.status(200).json({
         status: 200,
