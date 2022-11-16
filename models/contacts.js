@@ -1,15 +1,22 @@
 const Contact = require("../services/schemas/contactSchema");
 
-const listContacts = async () => {
-  return Contact.find();
+const listContacts = async (id) => {
+  return Contact.find({ owner: id });
 };
 
-const getLimitedContactsWithFavorite = async (limit, startIndex, favorite) => {
-  return Contact.find({ favorite: favorite }).limit(limit).skip(startIndex);
+const getLimitedContactsWithFavorite = async (
+  userId,
+  limit,
+  startIndex,
+  favorite
+) => {
+  return Contact.find({ favorite: favorite, owner: userId })
+    .limit(limit)
+    .skip(startIndex);
 };
 
-const getLimitedContacts = async (limit, startIndex) => {
-  return Contact.find().limit(limit).skip(startIndex);
+const getLimitedContacts = async (userId, limit, startIndex) => {
+  return Contact.find({ owner: userId }).limit(limit).skip(startIndex);
 };
 
 const getFavoriteContacts = async (favorite) => {
@@ -20,16 +27,16 @@ const getContactById = (id) => {
   return Contact.findOne({ _id: id });
 };
 
-const addContact = (body) => {
-  return Contact.create(body);
+const addContact = async (userId, body) => {
+  return await Contact.create({ ...body, owner: userId });
 };
 
 const updateContact = (id, body) => {
   return Contact.findByIdAndUpdate({ _id: id }, body, { new: true });
 };
 
-const removeContact = (id) => {
-  return Contact.findByIdAndRemove({ _id: id });
+const removeContact = (contactId) => {
+  return Contact.findByIdAndRemove({ _id: contactId });
 };
 
 const updateStatusContact = (id, body) => {
