@@ -6,20 +6,9 @@ const { auth } = require("../../authorization/auth");
 
 router.get("/", auth, pagination(), async (req, res, next) => {
   try {
-    // const favorite = req.query.favorite;
-    // if (favorite) {
-    //   const { error } = joi.schemaFavoriteList.validate(favorite);
-    //   if (error) {
-    //     const errorMessage = error.details.map((elem) => elem.message);
-    //     res.status(400).json({ message: errorMessage });
-    //   } else {
-    //     response = await contacts.getFavoriteContacts(favorite);
-    //   }
-    // }
-    // response = await contacts.listContacts();
     res.status(200).json({
       status: 200,
-      total: res.total,
+      totalInDatabase: res.totalInDatabase,
       data: res.response,
     });
   } catch (error) {
@@ -47,13 +36,15 @@ router.get("/:contactId", auth, async (req, res, next) => {
 
 router.post("/", auth, async (req, res, next) => {
   try {
+    const { id } = req.user;
+    console.log(id);
     const body = req.body;
     const { error } = joi.schemaPost.validate(body);
     if (error) {
       const errorMessage = error.details.map((elem) => elem.message);
       res.status(400).json({ message: errorMessage });
     } else {
-      const response = await contacts.addContact(body);
+      const response = await contacts.addContact(id, body);
       res.status(201).json({
         status: 201,
         data: response,
@@ -136,29 +127,39 @@ router.patch("/:contactId/favorite", auth, async (req, res, next) => {
 
 function pagination() {
   return async (req, res, next) => {
+    const { id } = req.user;
     const page = req.query.page;
     const limit = req.query.limit;
-    console.log(page, limit);
-
+    const favorite = req.query.favorite;
     try {
-      const total = (await contacts.listContacts()).length;
-      res.total = total;
+      const totalInDatabase = (await contacts.listContacts(id)).length;
+      res.totalInDatabase = totalInDatabase;
 
       const startIndex = (page - 1) * limit;
       const endIndex = page * limit;
       let response;
-      const { error } = joi.schemaPageAndLimit.validate({
+      const { error } = joi.schemaPageAndLimitAndFavorite.validate({
         page: page,
         limit: limit,
+        favorite: favorite,
       });
       if (error) {
         const errorMessage = error.details.map((elem) => elem.message);
         res.status(400).json({ message: errorMessage });
       } else {
-        if (total < endIndex) {
+        if (totalInDatabase < endIndex) {
           response = "No contacts";
         } else {
-          response = await contacts.getLimitedContacts(limit, startIndex);
+          if (favorite === undefined) {
+            response = await contacts.getLimitedContacts(id, limit, startIndex);
+          } else {
+            response = await contacts.getLimitedContactsWithFavorite(
+              id,
+              limit,
+              startIndex,
+              favorite
+            );
+          }
         }
       }
       res.response = response;

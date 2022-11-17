@@ -15,10 +15,14 @@ const schemaPut = Joi.object().keys({
 const schemaFavorite = Joi.object().keys({
   favorite: Joi.boolean(),
 });
-const schemaFavoriteList = Joi.boolean();
-const schemaPageAndLimit = Joi.object().keys({
+const schemaSubscritpion = Joi.object().keys({
+  subscription: ("starter", "pro", "business"),
+});
+
+const schemaPageAndLimitAndFavorite = Joi.object().keys({
   page: Joi.number().integer(),
   limit: Joi.number().integer(),
+  favorite: Joi.boolean(),
 });
 
 const schemaRegistration = Joi.object().keys({
@@ -31,6 +35,6 @@ module.exports = {
   schemaPut,
   schemaFavorite,
   schemaRegistration,
-  schemaFavoriteList,
-  schemaPageAndLimit,
+  schemaSubscritpion,
+  schemaPageAndLimitAndFavorite,
 };
