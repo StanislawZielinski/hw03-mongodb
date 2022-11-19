@@ -1,6 +1,5 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs").promises;
 
 const uploadDir = path.join(process.cwd(), "tmp");
 

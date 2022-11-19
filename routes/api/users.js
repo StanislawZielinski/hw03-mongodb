@@ -9,6 +9,9 @@ const { auth } = require("../../authorization/auth");
 const gravatar = require("gravatar");
 const upload = require("../../services/avatarUpload");
 const path = require("path");
+const Jimp = require("jimp");
+const { response } = require("express");
+const fs = require("fs").promises;
 
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -151,21 +154,33 @@ router.patch(
   auth,
   upload.upload.single("avatar"),
   async (req, res, next) => {
+    const { id } = req.user;
     try {
       const storeImage = path.join(process.cwd(), "public/avatars");
-      const { description } = req.body;
-      console.log(req.body);
-      console.log(description);
       const { path: temporaryName, originalname } = req.file;
-      console.log(req.file);
-      // const fileName = path.join(storeImage, originalname);
 
-      // const saveNewAvatar = patchAvatar(avatar);
-      // saveNewAvatar();
-      // const response = await userModel.getUserById(id);
+      await Jimp.read(`tmp/${originalname}`)
+        .then((avatar) => {
+          avatar
+            .resize(250, 250) // resize
+            .greyscale()
+            .write(`tmp/${originalname}`); // save
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+
+      const ext = path.extname(originalname);
+      const avatarNewName = `avatar${id}${ext}`;
+      const fileName = path.join(storeImage, avatarNewName);
+      await fs.rename(temporaryName, fileName);
+
+      const avatarNewURL = `/avatars/${avatarNewName}`;
+      const response = await userModel.updateAvatar(id, avatarNewURL);
+
       return res.status(200).json({
         status: 200,
-        avatar: "avatar uploaded",
+        avatar: response.avatarURL,
       });
     } catch (error) {
       console.log(error);
