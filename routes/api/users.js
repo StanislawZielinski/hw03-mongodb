@@ -6,6 +6,12 @@ const joi = require("../../utils/joi/joi");
 const jwt = require("jsonwebtoken");
 const secret = process.env.SECRET;
 const { auth } = require("../../authorization/auth");
+const gravatar = require("gravatar");
+const upload = require("../../services/avatarUpload");
+const path = require("path");
+const Jimp = require("jimp");
+const { response } = require("express");
+const fs = require("fs").promises;
 
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -53,13 +59,16 @@ router.post("/users/signup", async (req, res, next) => {
       const errorMessage = error.details.map((elem) => elem.message);
       res.status(400).json({ message: errorMessage });
     } else {
-      const newUser = new UserSchema({ email, password });
+      const avatarURL = gravatar.url({ email, s: "200", r: "pg" });
+      const newUser = new UserSchema({ email, password, avatarURL });
       newUser.setPassword(password);
+      console.log(newUser);
       await newUser.save();
       const response = {
         user: {
           email: email,
           subscription: "starter",
+          avatar: avatarURL,
         },
       };
       res.status(201).json({
@@ -139,5 +148,45 @@ router.get("/users/current", auth, async (req, res, next) => {
     console.log(error);
   }
 });
+
+router.patch(
+  "/users/avatar",
+  auth,
+  upload.upload.single("avatar"),
+  async (req, res, next) => {
+    const { id } = req.user;
+    try {
+      const storeImage = path.join(process.cwd(), "public/avatars");
+      const { path: temporaryName, originalname } = req.file;
+
+      await Jimp.read(`tmp/${originalname}`)
+        .then((avatar) => {
+          avatar
+            .resize(250, 250) // resize
+            .greyscale()
+            .write(`tmp/${originalname}`); // save
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+
+      const ext = path.extname(originalname);
+      const avatarNewName = `avatar${id}${ext}`;
+      const fileName = path.join(storeImage, avatarNewName);
+      await fs.rename(temporaryName, fileName);
+
+      const avatarNewURL = `/avatars/${avatarNewName}`;
+      const response = await userModel.updateAvatar(id, avatarNewURL);
+
+      return res.status(200).json({
+        status: 200,
+        avatar: response.avatarURL,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(401).json(error);
+    }
+  }
+);
 
 module.exports = router;
