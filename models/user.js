@@ -8,6 +8,10 @@ const getUserById = (id) => {
   return UserSchema.findOne({ _id: id });
 };
 
+const getUserByverificationToken = (verificationToken) => {
+  return UserSchema.findOne({ verificationToken: verificationToken });
+};
+
 const loginUser = (id, token) => {
   return UserSchema.findByIdAndUpdate(
     { _id: id },

@@ -11,6 +11,7 @@ const upload = require("../../services/avatarUpload");
 const path = require("path");
 const Jimp = require("jimp");
 const { response } = require("express");
+const { nanoid } = require("nanoid");
 const fs = require("fs").promises;
 
 router.get("/", auth, async (req, res, next) => {
@@ -22,6 +23,25 @@ router.get("/", auth, async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+  }
+});
+
+router.get("/users/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    const response = await contacts.getContactById(contactId);
+    if (response) {
+      res.status(200).json({
+        status: 200,
+        message: "Verification successful",
+        data: response.email,
+      });
+    } else {
+      res.status(404).json({ message: "User not Found" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({ message: "User not Found" });
   }
 });
 
@@ -60,7 +80,13 @@ router.post("/users/signup", async (req, res, next) => {
       res.status(400).json({ message: errorMessage });
     } else {
       const avatarURL = gravatar.url({ email, s: "200", r: "pg" });
-      const newUser = new UserSchema({ email, password, avatarURL });
+      const verificationToken = nanoid();
+      const newUser = new UserSchema({
+        email,
+        password,
+        avatarURL,
+        verificationToken,
+      });
       newUser.setPassword(password);
       console.log(newUser);
       await newUser.save();
@@ -69,6 +95,7 @@ router.post("/users/signup", async (req, res, next) => {
           email: email,
           subscription: "starter",
           avatar: avatarURL,
+          verification: `Please verify your email: /users/verify/${verificationToken}`,
         },
       };
       res.status(201).json({
