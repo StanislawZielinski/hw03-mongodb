@@ -5,6 +5,7 @@ const UserSchema = require("../../services/schemas/userSchema");
 const joi = require("../../utils/joi/joi");
 const jwt = require("jsonwebtoken");
 const secret = process.env.SECRET;
+const SENDER = process.env.SENDER;
 const { auth } = require("../../authorization/auth");
 const gravatar = require("gravatar");
 const upload = require("../../services/avatarUpload");
@@ -13,6 +14,8 @@ const Jimp = require("jimp");
 const { response } = require("express");
 const { nanoid } = require("nanoid");
 const fs = require("fs").promises;
+const sgMail = require("@sendgrid/mail");
+const msg = require("../../services/schemas/sendGrid");
 
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -29,8 +32,19 @@ router.get("/", auth, async (req, res, next) => {
 router.get("/users/verify/:verificationToken", async (req, res, next) => {
   try {
     const { verificationToken } = req.params;
-    const response = await contacts.getContactById(contactId);
+    const response = await userModel.getUserByverificationToken(
+      verificationToken
+    );
+
     if (response) {
+      await userModel.verifyUser(response.id);
+
+      // tests
+      const test = await userModel.getUserById(response.id);
+      console.log(test);
+
+      // end
+
       res.status(200).json({
         status: 200,
         message: "Verification successful",
@@ -88,19 +102,28 @@ router.post("/users/signup", async (req, res, next) => {
         verificationToken,
       });
       newUser.setPassword(password);
-      console.log(newUser);
       await newUser.save();
+      await sgMail
+        .send(msg(email, SENDER, verificationToken))
+        .then(() => {
+          console.log("Email sent");
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
       const response = {
         user: {
           email: email,
           subscription: "starter",
           avatar: avatarURL,
-          verification: `Please verify your email: /users/verify/${verificationToken}`,
         },
       };
+
       res.status(201).json({
         status: 201,
         data: response,
+        message: `Hi ${email}. Please check your email box`,
       });
     }
   } catch (error) {
@@ -129,7 +152,7 @@ router.post("/users/login", async (req, res, next) => {
         status: "error",
         code: 401,
         message: "Email or password is wrong",
-        data: "Conflict",
+        data: "Conflict-verify your account",
       });
     } else {
       const payload = {

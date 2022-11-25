@@ -1,7 +1,7 @@
 const UserSchema = require("../services/schemas/userSchema");
 
 const getUserByEmail = (email) => {
-  return UserSchema.findOne({ email: email });
+  return UserSchema.findOne({ email: email, verify: true });
 };
 
 const getUserById = (id) => {
@@ -20,6 +20,13 @@ const loginUser = (id, token) => {
   );
 };
 
+const verifyUser = (id) => {
+  return UserSchema.findByIdAndUpdate(
+    { _id: id },
+    { verify: true, verificationToken: null }
+    // { new: true }
+  );
+};
 const logoutUser = (id) => {
   return UserSchema.findByIdAndUpdate(
     { _id: id },
@@ -41,4 +48,6 @@ module.exports = {
   loginUser,
   logoutUser,
   updateAvatar,
+  getUserByverificationToken,
+  verifyUser,
 };
