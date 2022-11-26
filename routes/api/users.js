@@ -5,13 +5,16 @@ const UserSchema = require("../../services/schemas/userSchema");
 const joi = require("../../utils/joi/joi");
 const jwt = require("jsonwebtoken");
 const secret = process.env.SECRET;
+const SENDER = process.env.SENDER;
 const { auth } = require("../../authorization/auth");
 const gravatar = require("gravatar");
 const upload = require("../../services/avatarUpload");
 const path = require("path");
 const Jimp = require("jimp");
-const { response } = require("express");
+const { nanoid } = require("nanoid");
 const fs = require("fs").promises;
+const sgMail = require("@sendgrid/mail");
+const msg = require("../../services/schemas/sendGrid");
 
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -22,6 +25,30 @@ router.get("/", auth, async (req, res, next) => {
     });
   } catch (error) {
     console.log(error);
+  }
+});
+
+router.get("/users/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    const response = await userModel.getUserByverificationToken(
+      verificationToken
+    );
+
+    if (response) {
+      await userModel.verifyUser(response.id);
+
+      res.status(200).json({
+        status: 200,
+        message: "Verification successful",
+        data: response.email,
+      });
+    } else {
+      res.status(404).json({ message: "User not Found" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({ message: "User not Found" });
   }
 });
 
@@ -60,10 +87,24 @@ router.post("/users/signup", async (req, res, next) => {
       res.status(400).json({ message: errorMessage });
     } else {
       const avatarURL = gravatar.url({ email, s: "200", r: "pg" });
-      const newUser = new UserSchema({ email, password, avatarURL });
+      const verificationToken = nanoid();
+      const newUser = new UserSchema({
+        email,
+        password,
+        avatarURL,
+        verificationToken,
+      });
       newUser.setPassword(password);
-      console.log(newUser);
       await newUser.save();
+      await sgMail
+        .send(msg(email, SENDER, verificationToken))
+        .then(() => {
+          console.log("Email sent");
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
       const response = {
         user: {
           email: email,
@@ -71,14 +112,61 @@ router.post("/users/signup", async (req, res, next) => {
           avatar: avatarURL,
         },
       };
+
       res.status(201).json({
         status: 201,
         data: response,
+        message: `Hi ${email}. Please check your email box`,
       });
     }
   } catch (error) {
     console.log(error);
     res.status(400).json({ message: "Not found" });
+  }
+});
+
+router.post("/users/verify", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const { error } = joi.schemaEmail.validate(req.body);
+    if (error) {
+      const errorMessage = error.details.map((elem) => elem.message);
+      return res.status(400).json({
+        status: "error",
+        code: 400,
+        error: errorMessage,
+        message: "missing required field email",
+      });
+    }
+    const verified = false;
+    const user = await userModel.getUserByEmail(email, verified);
+    if (user) {
+      const verificationToken = nanoid();
+      await userModel.setNewVerificationToken(user.id, verificationToken);
+      await sgMail
+        .send(msg(email, SENDER, verificationToken))
+        .then(() => {
+          console.log("Email sent");
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      return res.status(200).json({
+        status: "200 OK",
+        code: 200,
+        message: "Verification email sent",
+      });
+    } else {
+      console.log(error);
+      res.status(400).json({
+        message: "Verification has already been passed",
+        error: error,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ message: error });
   }
 });
 
@@ -95,14 +183,14 @@ router.post("/users/login", async (req, res, next) => {
         data: "Conflict",
       });
     }
-
-    const user = await userModel.getUserByEmail(email);
+    const verified = true;
+    const user = await userModel.getUserByEmail(email, verified);
     if (!user || !user.validPassword(password)) {
       return res.status(401).json({
         status: "error",
         code: 401,
         message: "Email or password is wrong",
-        data: "Conflict",
+        data: "Conflict-verify your account",
       });
     } else {
       const payload = {
