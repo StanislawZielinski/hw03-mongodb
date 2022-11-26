@@ -11,7 +11,6 @@ const gravatar = require("gravatar");
 const upload = require("../../services/avatarUpload");
 const path = require("path");
 const Jimp = require("jimp");
-const { response } = require("express");
 const { nanoid } = require("nanoid");
 const fs = require("fs").promises;
 const sgMail = require("@sendgrid/mail");
@@ -38,12 +37,6 @@ router.get("/users/verify/:verificationToken", async (req, res, next) => {
 
     if (response) {
       await userModel.verifyUser(response.id);
-
-      // tests
-      const test = await userModel.getUserById(response.id);
-      console.log(test);
-
-      // end
 
       res.status(200).json({
         status: 200,
@@ -132,6 +125,51 @@ router.post("/users/signup", async (req, res, next) => {
   }
 });
 
+router.post("/users/verify", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const { error } = joi.schemaEmail.validate(req.body);
+    if (error) {
+      const errorMessage = error.details.map((elem) => elem.message);
+      return res.status(400).json({
+        status: "error",
+        code: 400,
+        error: errorMessage,
+        message: "missing required field email",
+      });
+    }
+    const verified = false;
+    const user = await userModel.getUserByEmail(email, verified);
+    if (user) {
+      const verificationToken = nanoid();
+      await userModel.setNewVerificationToken(user.id, verificationToken);
+      await sgMail
+        .send(msg(email, SENDER, verificationToken))
+        .then(() => {
+          console.log("Email sent");
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      return res.status(200).json({
+        status: "200 OK",
+        code: 200,
+        message: "Verification email sent",
+      });
+    } else {
+      console.log(error);
+      res.status(400).json({
+        message: "Verification has already been passed",
+        error: error,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ message: error });
+  }
+});
+
 router.post("/users/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -145,8 +183,8 @@ router.post("/users/login", async (req, res, next) => {
         data: "Conflict",
       });
     }
-
-    const user = await userModel.getUserByEmail(email);
+    const verified = true;
+    const user = await userModel.getUserByEmail(email, verified);
     if (!user || !user.validPassword(password)) {
       return res.status(401).json({
         status: "error",

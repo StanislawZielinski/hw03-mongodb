@@ -30,6 +30,10 @@ const schemaRegistration = Joi.object().keys({
   password: Joi.string().pattern(/^[a-zA-Z0-9]{3,30}$/),
 });
 
+const schemaEmail = Joi.object().keys({
+  email: Joi.string().email({ tlds: false }),
+});
+
 module.exports = {
   schemaPost,
   schemaPut,
@@ -37,4 +41,5 @@ module.exports = {
   schemaRegistration,
   schemaSubscritpion,
   schemaPageAndLimitAndFavorite,
+  schemaEmail,
 };
